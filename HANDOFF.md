@@ -111,7 +111,10 @@
   - محمد عارف إن ده الحد.
 - **سلمى:** بقت شغالة كل يوم 09:22 (`trig_015q3AWbb98b2CYrL6zb1c1p`)، والتفاصيل في `agents/salma.md`.
 - **صفحة المكتب (نسخة 7):** بقت تقرا من قاعدة داتا المكتب، وسلمى بقت باينة إنها شغالة.
-- ⚠️ كريم وسلمى محتاجين محمد يضيفلهم Supabase connector من صفحة الـ scheduled tasks على claude.ai.
+- **الشيفت بقى scheduled task واحدة:** الجلسة دي ماكانتش تقدر تدي connector لأي scheduled task جديدة. عشان كده نور وكريم وسلمى بقوا بيشتغلوا ورا بعض في الـ scheduled task بتاعة نور، لأنها الوحيدة اللي معاها Supabase. اسمها بقى `SPATIA AI Office Morning Reports (نور، كريم، سلمى)`، ورقمها `trig_01MAS797S5w4RR653KMydLEZ`، وبتبدأ كل يوم 08:58.
+  - كل موظف بيبعت تقريره وإشعاره لوحده.
+  - الـ scheduled tasks القديمة بتاعة كريم (`trig_01UQJmAPoGd6ADi2WYfWWHd4`) وسلمى (`trig_015q3AWbb98b2CYrL6zb1c1p`) اتوقفت، وماتمسحتش.
+  - أي موظف جديد يتضاف في نفس الـ scheduled task.
 
 ### الخطوة الجاية بعد كده
 1. محمد يضيف Supabase connector لـ scheduled task كريم، ونتأكد إن أول تقرير ليه (23 نوفمبر 09:10) وصل واتكتب سطره في الجدول.

@@ -31,4 +31,4 @@
 - شغالة من 22 نوفمبر 2026.
 - الـ scheduled task: `SPATIA Compounds Morning Report (سلمى)`، ورقمها `trig_015q3AWbb98b2CYrL6zb1c1p`.
 
-**ناقص:** الـ scheduled task اتعملت من غير Supabase connector. لازم محمد يضيفه من صفحة الـ scheduled tasks على claude.ai، زي كريم بالظبط.
+**من 22 نوفمبر:** بتشتغل جوه الشيفت الصبح `SPATIA AI Office Morning Reports (نور، كريم، سلمى)` (`trig_01MAS797S5w4RR653KMydLEZ`)، بعد كريم على طول. الـ scheduled task القديمة بتاعتها اتوقفت.
