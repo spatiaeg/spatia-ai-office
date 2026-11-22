@@ -14,6 +14,7 @@ Talk to Mohamed in Egyptian Arabic, in plain words. He wants a partner: say the 
 - Agents recommend only: they never create, complete or reschedule tasks, follow-ups or deals without Mohamed's confirmation.
 - No automated scraping of Dubizzle. No automated WhatsApp sending from a personal number: agents draft messages and Mohamed sends them. Use the official WhatsApp Business API later if volume grows.
 - Never put API keys or customer data (names, phones) in the repo.
+- Everything an agent reports must be clickable (agreed 22 Nov 2026): clients `https://nextlevel-app-mu.vercel.app/#client/<clients.id>`, owners `#ownerP/<owner_id>`, lists `#followups` `#pipeline` `#properties` `#clients`, WhatsApp drafts as `https://wa.me/?text=<encoded>` (no phone in the link). NextLevel has no single-unit link yet (`#unit/<id>` is a suggested NextLevel task); until then units link to `#properties`.
 
 ## Files
 - `office-3d.html`: the 3D office page (Three.js 0.160 from jsDelivr). Serve with `python3 -m http.server`; `file://` won't load the modules.
