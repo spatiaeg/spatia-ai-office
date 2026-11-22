@@ -6,8 +6,9 @@ Talk to Mohamed in Egyptian Arabic, in plain words. He wants a partner: say the 
 
 ## Separate from NextLevel
 - This project is separate from the NextLevel tool (repo `spatiaeg/Next-Level`). Don't change NextLevel's code from here.
-- The agents only **read** NextLevel's data from Supabase project `bwihskgdppzarjtuvmsq`, workspace SPATIA `00000000-0000-4000-8000-000000000001`. SELECT only.
-- The one approved write: each agent run inserts one summary row into `public.ai_office_reports` (schema in `supabase/ai_office_reports.sql`, approved 22 Nov 2026). No client/owner names or phones in it; the office page reads it.
+- The office has its **own database**: Supabase project `lexxmrjtgmvrnvnmerhf` ("SPATIA AI Office", schema in `supabase/office_db.sql`): `reports`, `market_observations`, `market_news`, `compounds`. Agents write only there. No client/owner names or phones in it.
+- The agents only **read** NextLevel's data from Supabase project `bwihskgdppzarjtuvmsq`, workspace SPATIA `00000000-0000-4000-8000-000000000001`. SELECT only, never write. (The old `ai_office_reports` table there is no longer used; deleting it needs Mohamed's approval.)
+- Agents also work from the open internet every run: news, market reports, the portals' public price-guide pages, and at most one public search page per area/compound and portal read like a person browsing. Every number is saved with its source URL. Never bulk-collect listings, page through results, log in, or get around blocks or captchas.
 - Any write to Supabase (rows, migrations, functions, secrets) needs Mohamed's explicit approval.
 
 ## Standing rules
@@ -19,10 +20,10 @@ Talk to Mohamed in Egyptian Arabic, in plain words. He wants a partner: say the 
 ## Files
 - `office-3d.html`: the 3D office page (Three.js 0.160 from jsDelivr). Serve with `python3 -m http.server`; `file://` won't load the modules.
 - `agents/`: one file per employee (job, report sections, schedule, status).
-- `supabase/ai_office_reports.sql`: the summary table the agents write and the page reads.
+- `supabase/office_db.sql`: the office's own database (what agents write, what the page reads). `supabase/ai_office_reports.sql` is the old table on NextLevel, no longer used.
 - `models/`: the six employee avatars (GLB), converted from Microsoft Rocketbox (MIT, see `models/LICENSE-ROCKETBOX.txt`).
 - `tools/rocketbox_to_glb.py`: Blender (`pip install bpy`) script that converts a Rocketbox avatar and retargets the walk / sit / idle clips.
-- Published copy: Claude artifact "مكتب SPATIA الرقمي" (slug `3f6912ba-93ff-4741-b334-269b4b9d82d0`). There the models load from uploaded assets (`/_blob/<id>`, the `BLOB` map), and the reports load through the viewer's Supabase connector (`mcp` capability, `execute_sql` SELECT on `ai_office_reports`). The repo copy loads `models/*.glb` and only shows reports if `SUPA.key` is set locally (never commit a key).
+- Published copy: Claude artifact "مكتب SPATIA الرقمي" (slug `3f6912ba-93ff-4741-b334-269b4b9d82d0`). There the models load from uploaded assets (`/_blob/<id>`, the `BLOB` map), and the reports load through the viewer's Supabase connector (`mcp` capability, `execute_sql` SELECT on `reports` in the office project). The repo copy loads `models/*.glb` and only shows reports if `SUPA.key` is set locally (never commit a key).
 
 ## Workflow
 - Work on a `claude/...` branch and open a PR with a short Arabic summary; Mohamed merges.

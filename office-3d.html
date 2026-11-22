@@ -51,7 +51,7 @@ canvas{display:block;touch-action:none}
   <div class="title"><b>مكتب SPATIA الرقمي</b><span>اسحب عشان تلف في المكتب، ودوس على اسم أي موظف</span></div>
   <div class="tools"><button id="rot">⟳ لف</button><button id="reset">⌂</button></div>
 </div>
-<div class="foot">الحركة للعرض بس. الأرقام اللي في كروت الموظفين حقيقية من NextLevel (22 نوفمبر، 4:30 الفجر). نور وكريم شغالين وبيبعتولك تقرير كل يوم الصبح، وباقي الفريق لسه ماتعيّنش. الشخصيات من مكتبة Microsoft Rocketbox (رخصة MIT).</div>
+<div class="foot">الحركة للعرض بس. الأرقام اللي في كروت الموظفين حقيقية من NextLevel (22 نوفمبر، 4:30 الفجر). نور وكريم وسلمى شغالين وبيبعتولك تقرير كل يوم الصبح، وباقي الفريق لسه ماتعيّنش. الشخصيات من مكتبة Microsoft Rocketbox (رخصة MIT).</div>
 <div class="sheet" id="sheet"><div class="panel" id="panel"></div></div>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -74,7 +74,7 @@ const AGENTS=[
   bubbles:['مكاتب التسعين…','بشوف المحلات','بقارن سعر المتر'],stats:[['136','وحدة إداري وتجاري (91 مكتب، 17 محل، 28 مبنى)']]},
  {id:'compounds',name:'سلمى',role:'الكمبوندات',
   look:{g:'f',hair:0x2a1a12,long:true,skin:0xe0b18c,suit:0xbfa98d,inner:0xffffff,bottom:0x23262c,skirt:true},
-  status:'لسه ماتعيّنش',tasks:['يمسك وحدات الكمبوندات وإعادة البيع','يبني أرشيف أسعار لكل كمبوند'],
+  live:true,status:'شغالة: تقرير كل يوم الساعة 9:22 الصبح',tasks:['تمسك وحدات الكمبوندات إيجار وإعادة بيع','توحّد أسامي الكمبوندات وإنت توافق','تقرا أسعار السوق من النت كل يوم وتحفظها في أرشيف المكتب مع لينك كل مصدر','تطلّع الوحدات الأرخص من سوق كمبوندها','تقترح بس، ومابتعملش حاجة غير بموافقتك'],
   bubbles:['ميفيدا…','بحدّث الأسعار','كمبوند جديد'],stats:[['512','وحدة متسجل لها كمبوند']]},
  {id:'medical',name:'ياسين',role:'الطبي',
   look:{g:'m',hair:0x2b1d14,skin:0xb37a54,suit:0x1c2a48,inner:0xeaf2fb,tie:0x5d8fc9,bottom:0x1c2a48},
@@ -96,9 +96,9 @@ function saveNames(){try{localStorage.setItem('spatia-office-names',JSON.stringi
 // آخر تقرير لكل موظف من جدول ai_office_reports (ملخصات من غير أسامي عملاء ولا تليفونات).
 // في الصفحة المنشورة على Claude الداتا بتيجي من Supabase connector بتاع محمد (قراءة بس).
 // المفتاح العام SUPA.key اختياري للتشغيل برا Claude، ومابيتحطش في الريبو.
-const SUPA={project:'bwihskgdppzarjtuvmsq',url:'https://bwihskgdppzarjtuvmsq.supabase.co',key:''};
+const SUPA={project:'lexxmrjtgmvrnvnmerhf',url:'https://lexxmrjtgmvrnvnmerhf.supabase.co',key:''};   // قاعدة داتا المكتب، منفصلة عن NextLevel
 const WS='00000000-0000-4000-8000-000000000001';
-const REPORT_SQL="select distinct on (agent) agent, run_at, headline, stats, top3 from public.ai_office_reports where workspace_id = '"+WS+"' order by agent, run_at desc";
+const REPORT_SQL="select distinct on (agent) agent, run_at, headline, stats, top3 from public.reports order by agent, run_at desc";
 const fmtTime=t=>new Date(t).toLocaleString('ar-EG',{timeZone:'Africa/Cairo',day:'numeric',month:'long',hour:'numeric',minute:'2-digit'});
 function parseSqlPayload(p){
  if(Array.isArray(p))return p;
@@ -110,7 +110,7 @@ function parseSqlPayload(p){
 async function fetchReports(){
  const mcp=window.claude&&typeof window.claude.use==='function'?await window.claude.use('mcp').catch(()=>null):null;
  if(mcp){const r=await mcp.callTool('Supabase','execute_sql',{project_id:SUPA.project,query:REPORT_SQL});return parseSqlPayload(r.payload??(r.content&&r.content[0]&&r.content[0].text))}
- if(SUPA.key){const r=await fetch(SUPA.url+'/rest/v1/ai_office_reports?select=agent,run_at,headline,stats,top3&workspace_id=eq.'+WS+'&order=run_at.desc&limit=60',{headers:{apikey:SUPA.key}});if(r.ok)return r.json()}
+ if(SUPA.key){const r=await fetch(SUPA.url+'/rest/v1/reports?select=agent,run_at,headline,stats,top3&order=run_at.desc&limit=60',{headers:{apikey:SUPA.key}});if(r.ok)return r.json()}
  return null}
 function applyReports(rows){
  const seen={};rows.sort((a,b)=>new Date(b.run_at)-new Date(a.run_at));
@@ -119,7 +119,7 @@ function applyReports(rows){
   if(Array.isArray(x.stats)&&x.stats.length)a.stats=x.stats.filter(s=>Array.isArray(s)&&s.length>=2).map(s=>[String(s[0]),String(s[1])]);
   a.bubbles=[x.headline.length>38?x.headline.slice(0,36)+'…':x.headline,...a.bubbles.filter(b=>!/^\d/.test(b))]});
  if(rows[0]){document.querySelector('.foot').textContent='الأرقام من آخر تقرير لكل موظف، وآخر تحديث '+fmtTime(rows[0].run_at)+'. الحركة للعرض بس. الشخصيات من مكتبة Microsoft Rocketbox (رخصة MIT).';
-  const items=[];['followup','admin'].forEach(id=>{const a=AGENTS.find(a=>a.id===id);if(a.report)a.stats.slice(0,2).forEach(s=>items.push([s[0],a.name+': '+s[1]]))});
+  const items=[];['followup','admin','compounds'].forEach(id=>{const a=AGENTS.find(a=>a.id===id);if(a.report)a.stats.slice(0,2).forEach(s=>items.push([s[0],a.name+': '+s[1]]))});
   if(items.length&&window.__drawBoard)window.__drawBoard(items.slice(0,4),'NextLevel · آخر تحديث '+fmtTime(rows[0].run_at))}}
 async function loadReports(){try{const rows=await fetchReports();if(rows&&rows.length)applyReports(rows)}catch(e){console.warn('reports',e&&e.code||e)}}
 
