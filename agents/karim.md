@@ -35,4 +35,4 @@
 - شغال من 22 نوفمبر 2026.
 - اسم الـ scheduled task: `SPATIA Office & Retail Morning Report (كريم)`، ورقمها `trig_01UQJmAPoGd6ADi2WYfWWHd4`.
 
-**ناقص:** الـ scheduled task اتعملت من غير Supabase connector، لأن الجلسة دي ماكانتش تقدر تديهوله. لازم محمد يضيفه من صفحة الـ scheduled tasks على claude.ai، وإلا تقرير كريم هيقول إنه مش قادر يوصل للداتا.
+**من 22 نوفمبر:** بيشتغل جوه الشيفت الصبح `SPATIA AI Office Morning Reports (نور، كريم، سلمى)` (`trig_01MAS797S5w4RR653KMydLEZ`)، بعد نور على طول. الـ scheduled task القديمة بتاعته اتوقفت.
