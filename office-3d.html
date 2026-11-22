@@ -51,7 +51,7 @@ canvas{display:block;touch-action:none}
   <div class="title"><b>مكتب SPATIA الرقمي</b><span>اسحب عشان تلف في المكتب، ودوس على اسم أي موظف</span></div>
   <div class="tools"><button id="rot">⟳ لف</button><button id="reset">⌂</button></div>
 </div>
-<div class="foot">الحركة للعرض بس. الأرقام اللي في كروت الموظفين حقيقية من NextLevel (22 نوفمبر، 4:30 الفجر). نور شغال وبيبعتلك تقرير كل يوم الساعة 9 الصبح، وباقي الفريق لسه ماتعيّنش. الشخصيات من مكتبة Microsoft Rocketbox (رخصة MIT).</div>
+<div class="foot">الحركة للعرض بس. الأرقام اللي في كروت الموظفين حقيقية من NextLevel (22 نوفمبر، 4:30 الفجر). نور وكريم شغالين وبيبعتولك تقرير كل يوم الصبح، وباقي الفريق لسه ماتعيّنش. الشخصيات من مكتبة Microsoft Rocketbox (رخصة MIT).</div>
 <div class="sheet" id="sheet"><div class="panel" id="panel"></div></div>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -70,8 +70,8 @@ const AGENTS=[
   stats:[['7','متابعات ميعادها عدّى'],['2','متابعات خلال يومين'],['4','صفقات من غير خطوة جاية'],['121','عميل من Property Finder من غير طلب متسجل'],['6','وحدات لوتس جنوبي إيجار لحد 20 ألف نزلت الأسبوع ده (طلب عميل متسجل)'],['0','فيلات إيجار في الشروق لحد 40 ألف (طلب عميل متسجل)']]},
  {id:'admin',name:'كريم',role:'الإداري والتجاري',
   look:{g:'m',hair:0x1b1612,skin:0xc48d66,suit:0x2d2f35,inner:0xffffff,tie:0x7a1f2b,bottom:0x2d2f35},
-  status:'لسه ماتعيّنش',tasks:['يمسك المكاتب والمحلات والعيادات','يتابع توافرها ويطابقها مع طلبات الشركات'],
-  bubbles:['مكاتب التسعين…','بشوف المحلات','بقارن الأسعار'],stats:[['110','وحدة إداري/تجاري/عيادة في الداتا']]},
+  live:true,status:'شغال: تقرير كل يوم الساعة 9:10 الصبح',tasks:['يمسك المكاتب والمحلات والمباني','يقارن سعر المتر بمتوسط المنطقة ويطلّع الفرص','يجهز رسالة واتساب لصاحب الوحدة عشان يأكد التوافر، وإنت تبعتها','يطلّع الوحدات الناقصة والمكررة','يقترح بس، ومايعملش أي حاجة غير بموافقتك'],
+  bubbles:['مكاتب التسعين…','بشوف المحلات','بقارن سعر المتر'],stats:[['136','وحدة إداري وتجاري (91 مكتب، 17 محل، 28 مبنى)']]},
  {id:'compounds',name:'سلمى',role:'الكمبوندات',
   look:{g:'f',hair:0x2a1a12,long:true,skin:0xe0b18c,suit:0xbfa98d,inner:0xffffff,bottom:0x23262c,skirt:true},
   status:'لسه ماتعيّنش',tasks:['يمسك وحدات الكمبوندات وإعادة البيع','يبني أرشيف أسعار لكل كمبوند'],
@@ -92,6 +92,36 @@ const AGENTS=[
 let saved={};try{saved=JSON.parse(localStorage.getItem('spatia-office-names')||'{}')}catch(e){}
 AGENTS.forEach(a=>{if(saved[a.id])a.name=saved[a.id]});
 function saveNames(){try{localStorage.setItem('spatia-office-names',JSON.stringify(Object.fromEntries(AGENTS.map(a=>[a.id,a.name]))))}catch(e){}}
+
+// آخر تقرير لكل موظف من جدول ai_office_reports (ملخصات من غير أسامي عملاء ولا تليفونات).
+// في الصفحة المنشورة على Claude الداتا بتيجي من Supabase connector بتاع محمد (قراءة بس).
+// المفتاح العام SUPA.key اختياري للتشغيل برا Claude، ومابيتحطش في الريبو.
+const SUPA={project:'bwihskgdppzarjtuvmsq',url:'https://bwihskgdppzarjtuvmsq.supabase.co',key:''};
+const WS='00000000-0000-4000-8000-000000000001';
+const REPORT_SQL="select distinct on (agent) agent, run_at, headline, stats, top3 from public.ai_office_reports where workspace_id = '"+WS+"' order by agent, run_at desc";
+const fmtTime=t=>new Date(t).toLocaleString('ar-EG',{timeZone:'Africa/Cairo',day:'numeric',month:'long',hour:'numeric',minute:'2-digit'});
+function parseSqlPayload(p){
+ if(Array.isArray(p))return p;
+ if(p&&typeof p==='object'&&Array.isArray(p.result))return p.result;
+ const t=typeof p==='string'?p:(p&&typeof p.result==='string'?p.result:'');
+ const m=t.match(/<untrusted-data-[^>]*>\s*([\s\S]*?)\s*<\/untrusted-data/);
+ const body=m?m[1]:t.slice(t.indexOf('['),t.lastIndexOf(']')+1);
+ const rows=JSON.parse(body);return Array.isArray(rows)?rows:[]}
+async function fetchReports(){
+ const mcp=window.claude&&typeof window.claude.use==='function'?await window.claude.use('mcp').catch(()=>null):null;
+ if(mcp){const r=await mcp.callTool('Supabase','execute_sql',{project_id:SUPA.project,query:REPORT_SQL});return parseSqlPayload(r.payload??(r.content&&r.content[0]&&r.content[0].text))}
+ if(SUPA.key){const r=await fetch(SUPA.url+'/rest/v1/ai_office_reports?select=agent,run_at,headline,stats,top3&workspace_id=eq.'+WS+'&order=run_at.desc&limit=60',{headers:{apikey:SUPA.key}});if(r.ok)return r.json()}
+ return null}
+function applyReports(rows){
+ const seen={};rows.sort((a,b)=>new Date(b.run_at)-new Date(a.run_at));
+ rows.forEach(x=>{if(!x||seen[x.agent]||typeof x.headline!=='string')return;seen[x.agent]=1;const a=AGENTS.find(a=>a.id===x.agent);if(!a)return;
+  a.report={at:x.run_at,headline:x.headline,top3:Array.isArray(x.top3)?x.top3.map(String):[]};
+  if(Array.isArray(x.stats)&&x.stats.length)a.stats=x.stats.filter(s=>Array.isArray(s)&&s.length>=2).map(s=>[String(s[0]),String(s[1])]);
+  a.bubbles=[x.headline.length>38?x.headline.slice(0,36)+'…':x.headline,...a.bubbles.filter(b=>!/^\d/.test(b))]});
+ if(rows[0]){document.querySelector('.foot').textContent='الأرقام من آخر تقرير لكل موظف، وآخر تحديث '+fmtTime(rows[0].run_at)+'. الحركة للعرض بس. الشخصيات من مكتبة Microsoft Rocketbox (رخصة MIT).';
+  const items=[];['followup','admin'].forEach(id=>{const a=AGENTS.find(a=>a.id===id);if(a.report)a.stats.slice(0,2).forEach(s=>items.push([s[0],a.name+': '+s[1]]))});
+  if(items.length&&window.__drawBoard)window.__drawBoard(items.slice(0,4),'NextLevel · آخر تحديث '+fmtTime(rows[0].run_at))}}
+async function loadReports(){try{const rows=await fetchReports();if(rows&&rows.length)applyReports(rows)}catch(e){console.warn('reports',e&&e.code||e)}}
 
 const MODEL={followup:'f2',admin:'m1',compounds:'f3',medical:'m2',pf:'m3',owners:'f4'};
 
@@ -217,10 +247,11 @@ const logoT=canvasTex(1024,320,(g,w,h)=>{g.clearRect(0,0,w,h);g.fillStyle='#3e2a
 const logo=new THREE.Mesh(new THREE.PlaneGeometry(2.4,0.75),new THREE.MeshBasicMaterial({map:logoT,transparent:true}));logo.position.set(RX-0.07,2.25,1.6);logo.rotation.y=-Math.PI/2;scene.add(logo);
 // report screen on the slat wall
 const repC=document.createElement('canvas');repC.width=1024;repC.height=576;
-(function(){const g=repC.getContext('2d');g.fillStyle='#0f1724';g.fillRect(0,0,1024,576);g.direction='rtl';g.textAlign='right';g.fillStyle='#fff';g.font='700 46px IBM Plex Sans Arabic';g.fillText('تقارير اليوم',980,80);
- g.font='26px IBM Plex Sans Arabic';g.fillStyle='#93a3b8';g.fillText('NextLevel · قراءة 22 نوفمبر',980,124);
- [['7','متابعات متأخرة'],['4','صفقات من غير خطوة'],['121','عميل من غير طلب'],['6','وحدات للوتس']].forEach(([n,l],i)=>{const x=1024-60-(i%2)*470,y=170+Math.floor(i/2)*190;g.fillStyle='#1a2538';g.fillRect(x-430,y,430,160);g.fillStyle='#fff';g.font='700 72px IBM Plex Sans Arabic';g.fillText(n,x-30,y+90);g.fillStyle='#9fb0c6';g.font='28px IBM Plex Sans Arabic';g.fillText(l,x-30,y+135)})})();
-const repT=new THREE.CanvasTexture(repC);repT.colorSpace=THREE.SRGBColorSpace;
+function drawBoard(items,sub){const g=repC.getContext('2d');g.fillStyle='#0f1724';g.fillRect(0,0,1024,576);g.direction='rtl';g.textAlign='right';g.fillStyle='#fff';g.font='700 46px IBM Plex Sans Arabic';g.fillText('تقارير اليوم',980,80);
+ g.font='26px IBM Plex Sans Arabic';g.fillStyle='#93a3b8';g.fillText(sub,980,124);
+ items.forEach(([n,l],i)=>{l=l.length>26?l.slice(0,25)+'…':l;const x=1024-60-(i%2)*470,y=170+Math.floor(i/2)*190;g.fillStyle='#1a2538';g.fillRect(x-430,y,430,160);g.fillStyle='#fff';g.font='700 72px IBM Plex Sans Arabic';g.fillText(n,x-30,y+90);g.fillStyle='#9fb0c6';g.font='28px IBM Plex Sans Arabic';g.fillText(l,x-30,y+135)});if(window.__repT)window.__repT.needsUpdate=true}
+drawBoard([['7','متابعات متأخرة'],['4','صفقات من غير خطوة'],['136','وحدة إداري وتجاري'],['6','وحدات للوتس']],'NextLevel · قراءة 22 نوفمبر');
+const repT=new THREE.CanvasTexture(repC);repT.colorSpace=THREE.SRGBColorSpace;window.__repT=repT;window.__drawBoard=drawBoard;
 const tv=new THREE.Mesh(new THREE.PlaneGeometry(2.1,1.18),new THREE.MeshBasicMaterial({map:repT,toneMapped:false}));tv.position.set(RX-0.1,1.65,-0.6);tv.rotation.y=-Math.PI/2;scene.add(tv);
 scene.add(box(0.05,1.26,2.18,black,RX-0.07,1.65,-0.6,0.01));
 // lounge (front right)
@@ -312,7 +343,9 @@ function openPanel(a){
  panel.innerHTML=`<h3>${esc(a.name)}</h3><div class="sub">${esc(a.role)}</div><span class="chip ${a.live?'on':'soon'}">${esc(a.status)}</span>
  <label>اسم الموظف</label><input id="nm" value="${esc(a.name)}" maxlength="20">
  <label>شغله</label><ul>${a.tasks.map(t=>'<li>'+esc(t)+'</li>').join('')}</ul>
- ${a.stats.length?`<label>${a.live?'أول قراءة من الداتا (22 نوفمبر، 4:30 الفجر)':'اللي في الداتا دلوقتي'}</label><div class="stats">${a.stats.map(s=>`<div class="stat"><b>${s[0]}</b><span>${esc(s[1])}</span></div>`).join('')}</div>`:''}
+ ${a.report?`<label>آخر تقرير (${esc(fmtTime(a.report.at))})</label><div style="font-weight:600;font-size:15px">${esc(a.report.headline)}</div>`:''}
+ ${a.stats.length?`<label>${a.report?'أرقام آخر تقرير':a.live?'أول قراءة من الداتا (22 نوفمبر)':'اللي في الداتا دلوقتي'}</label><div class="stats">${a.stats.map(s=>`<div class="stat"><b>${s[0]}</b><span>${esc(s[1])}</span></div>`).join('')}</div>`:''}
+ ${a.report&&a.report.top3.length?`<label>أهم 3 حاجات النهاردة (اقتراحات)</label><ul>${a.report.top3.map(t=>'<li>'+esc(t)+'</li>').join('')}</ul>`:''}
  <div class="btns"><button class="primary" id="sv">حفظ الاسم</button><button class="ghost" id="cl">قفل</button></div>`;
  sheet.classList.add('open');
  document.getElementById('cl').onclick=()=>sheet.classList.remove('open');
@@ -328,6 +361,7 @@ function loop(){const dt=Math.min(clock.getDelta(),0.05);update(dt);controls.upd
 loop();
 AGENTS.forEach(a=>loader.load('models/'+MODEL[a.id]+'.glb',g=>{initAgent(a,g);loaded++;prog();if(loaded===AGENTS.length)document.getElementById('load').style.display='none'},undefined,e=>{loaded++;prog();pt.textContent='في موظف ماتحملش، جرّب تفتح الصفحة تاني';console.error(e)}));
 setTimeout(()=>{document.getElementById('load').style.display='none'},45000);
+loadReports();
 </script>
 </body>
 </html>
