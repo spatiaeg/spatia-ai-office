@@ -1,0 +1,2 @@
+Avatar models in models/ are converted from Microsoft Rocketbox Avatar Library
+https://github.com/microsoft/Microsoft-Rocketbox — MIT License, Copyright (c) Microsoft Corporation.
